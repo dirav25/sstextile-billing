@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>S S Textile — Billing & Management (Offline)</title>
+<style>
+:root{
+  --bg:#f4f7fb; --card:#fff; --muted:#6b7280; --accent:#0f62fe; --accent-2:#0b7bdc;
+  --success:#16a34a; --danger:#dc2626; --glass:rgba(255,255,255,0.7);
+  --shadow: 0 6px 24px rgba(12,30,60,0.08);
+  --maxwidth:1100px;
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:var(--font-sans);background:linear-gradient(180deg,#eef6ff 0,#f4f7fb 40%);color:#0f172a}
+.container{max-width:var(--maxwidth);margin:22px auto;padding:18px}
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:64px;height:64px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px;box-shadow:var(--shadow)}
+.title{font-size:18px;font-weight:700}
+.subtitle{color:var(--muted);font-size:13px}
+.toolbar{display:flex;gap:8px;align-items:center}
+.btn{background:var(--accent);color:white;padding:9px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:600;box-shadow:0 6px 18px rgba(12,30,60,.08)}
+.btn.gray{background:#fff;color:#111;border:1px solid #e6e9ef}
+.btn.warn{background:var(--danger)}
+.grid{display:grid;grid-template-columns:320px 1fr;gap:18px}
+.card{background:var(--card);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+.sidebar .section{margin-bottom:14px}
+.business h2{margin:0;font-size:16px}
+.small{font-size:13px;color:var(--muted)}
+.input, input, select, textarea{width:100%;padding:9px;border-radius:8px;border:1px solid #e6e9ef;background:white;font-size:14px}
+.row{display:flex;gap:8px}
+.row > *{flex:1}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.items-table{width:100%;border-collapse:collapse;margin-top:8px}
+.items-table th, .items-table td{padding:8px;border-bottom:1px solid #f1f5f9;text-align:left;font-size:14px}
+.items-table th{color:var(--muted);font-weight:600}
+.items-tfoot td{font-weight:700}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.history-table{width:100%;border-collapse:collapse}
+.history-table th, .history-table td{padding:10px;border-bottom:1px solid #eef2f7;font-size:14px}
+.kv{display:flex;justify-content:space-between;padding:6px 0;color:var(--muted);font-size:13px}
+.controls{display:flex;gap:8px;align-items:center}
+.footer-note{font-size:12px;color:var(--muted);margin-top:8px}
+
+/* Print view */
+@media print{
+  body{background:white}
+  .container{max-width:800px;margin:0}
+  .noprint{display:none!important}
+  .print-invoice{display:block}
+  .grid{display:block}
+}
+
+/* Responsive */
+@media (max-width:920px){
+  .grid{grid-template-columns:1fr; }
+  .sidebar{order:2}
+  .main{order:1}
+  .logo{width:48px;height:48px;font-size:16px}
+}
+.note{font-size:13px;color:var(--muted)}
+.badge{display:inline-block;background:#eef2ff;color:var(--accent-2);padding:4px 8px;border-radius:999px;font-weight:700;font-size:12px}
+
+/* Invoice print styling inside page */
+.print-invoice{display:none;background:white;padding:20px;border-radius:6px}
+.invoice-header{display:flex;justify-content:space-between;margin-bottom:12px}
+.invoice-header-left{max-width:60%}
+.company-name{font-size:20px;font-weight:800}
+.gstin{font-size:13px;color:var(--muted)}
+.invoice-meta{text-align:right}
+.invoice-table{width:100%;border-collapse:collapse;margin-top:10px}
+.invoice-table th, .invoice-table td{padding:8px;border:1px solid #ddd;font-size:13px}
+.invoice-terms{margin-top:12px;font-size:13px;color:var(--muted)}
+.center{text-align:center}
+.right{text-align:right}
+.small-muted{color:var(--muted);font-size:12px}
+.input-inline{display:flex;gap:8px}
+.icon-btn{background:#fff;border:1px solid #e6e9ef;padding:8px;border-radius:8px;cursor:pointer}
+.search{padding:8px;border-radius:8px;border:1px solid #e6e9ef}
+
+/* Tiny helpers */
+.flex{display:flex}
+.space{justify-content:space-between;align-items:center}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="brand">
+      <div class="logo">SST</div>
+      <div>
+        <div class="title">S S Textile — Billing</div>
+        <div class="subtitle">Professional offline GST billing • Works in-browser (localStorage)</div>
+      </div>
+    </div>
+
+    <div class="toolbar noprint">
+      <button class="btn" id="newInvoiceBtn">New Invoice</button>
+      <label class="btn gray" title="Import backup">
+        Import
+        <input id="importFile" type="file" accept="application/json" style="display:none">
+      </label>
+      <button class="btn gray" id="exportBtn" title="Export backup">Backup</button>
+      <button class="btn gray" id="helpBtn" title="About / Help">Help</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Sidebar -->
+    <aside class="card sidebar">
+      <div class="section business">
+        <h2>S S TEXTILE</h2>
+        <div class="small">GSTIN: <strong>27ABCDE1234F1Z5</strong></div>
+        <div class="small">Mobile: <strong>+91 98765 43210</strong></div>
+        <div class="small">Address: Textile Market, Pune, Maharashtra</div>
+        <hr style="margin:10px 0;border:none;border-top:1px solid #f1f5f9">
+        <div class="small"><strong>Bank:</strong> State Bank of India</div>
+        <div class="small"><strong>A/C:</strong> 1234567890123456</div>
+        <div class="small"><strong>IFSC:</strong> SBIN0001234</div>
+        <div class="small"><strong>UPI:</strong> sstextile@upi</div>
+      </div>
+
+      <div class="section">
+        <div class="kv"><span class="small-muted">Total Customers</span><span id="countCustomers">0</span></div>
+        <div class="kv"><span class="small-muted">Total Invoices</span><span id="countInvoices">0</span></div>
+        <div class="kv"><span class="small-muted">Last Invoice</span><span id="lastInv">—</span></div>
+      </div>
+
+      <div class="section noprint">
+        <h3 style="margin:0 0 8px 0">Add / Edit Customer</h3>
+        <input class="input" id="custName" placeholder="Customer name">
+        <input class="input" id="custMobile" placeholder="Mobile">
+        <input class="input" id="custGst" placeholder="GSTIN (optional)">
+        <textarea id="custAddr" class="input" placeholder="Address" rows="2"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" id="saveCustomerBtn">Save Customer</button>
+          <button class="btn gray" id="clearCustomerBtn">Clear</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h4 style="margin:0 0 8px 0">Notes</h4>
+        <div class="note">This is an offline app. Data is stored in your browser using localStorage. Use Export/Import to backup or transfer data.</div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+          <div>
+            <div style="font-weight:700">Create / Edit Invoice</div>
+            <div class="small-muted">CGST + SGST applied automatically (2.5% each by default)</div>
+          </div>
+          <div class="noprint">
+            <div class="controls">
+              <input id="searchInvoices" class="search" placeholder="Search invoice / customer / date">
+              <select id="filterMonth" class="input" style="width:150px">
+                <option value="">All months</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap" class="noprint">
+            <div style="width:200px"><input id="invNo" class="input" placeholder="Invoice No"></div>
+            <div style="width:160px"><input id="invDate" class="input" type="date"></div>
+            <div style="flex:1">
+              <select id="custSelect" class="input">
+                <option value="">-- Select Customer (or type new) --</option>
+              </select>
+            </div>
+            <div style="width:120px"><input id="custMobileSelect" class="input" placeholder="Mobile (optional)"></div>
+          </div>
+
+          <div style="margin-top:12px" class="noprint">
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="itemName" class="input" placeholder="Item description">
+              <input id="itemQty" class="input" type="number" min="0" placeholder="Qty" style="width:110px">
+              <input id="itemRate" class="input" type="number" min="0" placeholder="Rate" style="width:140px">
+              <button class="btn" id="addItemBtn">Add Item</button>
+              <button class="btn gray" id="clearItemsBtn">Clear Items</button>
+            </div>
+            <div style="margin-top:8px;color:var(--muted);font-size:13px">Tip: add items, then Save Invoice. You can edit invoices from history.</div>
+          </div>
+
+          <div style="margin-top:12px;overflow:auto">
+            <table class="items-table" id="itemsTable">
+              <thead><tr><th>Item</th><th style="width:80px">Qty</th><th style="width:120px">Rate</th><th style="width:120px">Amount</th><th class="noprint" style="width:70px">Actions</th></tr></thead>
+              <tbody></tbody>
+              <tfoot class="items-tfoot">
+                <tr><td colspan="3" class="right">Subtotal</td><td id="subtotalCell">₹0.00</td><td class="noprint"></td></tr>
+                <tr><td colspan="3" class="right">CGST (<span id="taxPctHalf">2.5</span>%)</td><td id="cgstCell">₹0.00</td><td class="noprint"></td></tr>
+                <tr><td colspan="3" class="right">SGST (<span id="taxPctHalf2">2.5</span>%)</td><td id="sgstCell">₹0.00</td><td class="noprint"></td></tr>
+                <tr><td colspan="3" class="right">Grand Total</td><td id="grandTotalCell">₹0.00</td><td class="noprint"></td></tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end" class="noprint">
+            <button class="btn" id="saveInvoiceBtn">Save Invoice</button>
+            <button class="btn gray" id="printPreviewBtn">Print Preview</button>
+            <button class="btn gray" id="clearFormBtn">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px" class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Invoice History</div>
+          <div class="small-muted">Click an invoice to print or edit</div>
+        </div>
+
+        <div style="margin-top:12px;overflow:auto">
+          <table class="history-table" id="historyTable">
+            <thead><tr><th>Invoice</th><th>Customer</th><th>Date</th><th>Total</th><th class="noprint">Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="footer-note noprint">
+          <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
+            <div>Export/Import backup to transfer or store data.</div>
+            <div>Ready for GitHub Pages: place this file as index.html</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Print area -->
+      <div id="printArea" class="print-invoice card">
+        <!-- Populated dynamically for print -->
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+/*
+  SSTextile Billing — Single-file offline app
+  - localStorage keys: sst_meta, sst_customers, sst_invoices
+  - taxes: default total 5% (split into 2.5% CGST and SGST)
+*/
+
+const STORAGE_META = 'sst_meta_v1';
+const STORAGE_CUST = 'sst_customers_v1';
+const STORAGE_INV = 'sst_invoices_v1';
+const TAX_TOTAL_PERCENT = 5; // total GST %
+const TAX_HALF = TAX_TOTAL_PERCENT / 2; // CGST & SGST each
+
+// Utilities
+const $ = id => document.getElementById(id);
+const q = sel => document.querySelector(sel);
+const fmt = v => Number(v).toLocaleString('en-IN', { style:'currency', currency:'INR' });
+
+function loadJSON(key, def){ try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(def)); }catch(e){ return def; } }
+function saveJSON(key, obj){ localStorage.setItem(key, JSON.stringify(obj)); }
+
+// Initialize storage if missing
+function initStorage(){
+  let meta = loadJSON(STORAGE_META, {});
+  if(!meta.lastInv) meta.lastInv = 0;
+  saveJSON(STORAGE_META, meta);
+
+  let cust = loadJSON(STORAGE_CUST, []);
+  saveJSON(STORAGE_CUST, cust);
+
+  let inv = loadJSON(STORAGE_INV, []);
+  saveJSON(STORAGE_INV, inv);
+}
+
+// Invoice number generator
+function nextInvoiceNumber(persist=true){
+  let meta = loadJSON(STORAGE_META, {});
+  meta.lastInv = (meta.lastInv || 0) + 1;
+  if(persist) saveJSON(STORAGE_META, meta);
+  const padded = String(meta.lastInv).padStart(4,'0');
+  const year = new Date().getFullYear();
+  return `SST-${padded}`;
+}
+
+// DOM references and state
+let items = [];
+let editingInvoiceId = null;
+
+function refreshCounts(){
+  const customers = loadJSON(STORAGE_CUST, []);
+  const invoices = loadJSON(STORAGE_INV, []);
+  $('countCustomers').innerText = customers.length;
+  $('countInvoices').innerText = invoices.length;
+  $('lastInv').innerText = invoices.length ? invoices[0].inv : '—';
+  populateCustomerSelect();
+  populateMonthFilter();
+}
+
+// Customers
+function populateCustomerSelect(){
+  const sel = $('custSelect');
+  const mobile = $('custMobileSelect');
+  const current = sel.value || '';
+  sel.innerHTML = '<option value="">-- Select Customer (or type new) --</option>';
+  const customers = loadJSON(STORAGE_CUST, []);
+  customers.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.name;
+    opt.dataset.mobile = c.mobile || '';
+    opt.dataset.gstin = c.gstin || '';
+    opt.dataset.addr = c.address || '';
+    opt.textContent = `${c.name}${c.mobile ? ' • ' + c.mobile : ''}`;
+    sel.appendChild(opt);
+  });
+  sel.value = current;
+  // Autofill mobile when selecting
+  sel.onchange = ()=> {
+    const selected = sel.options[sel.selectedIndex];
+    if(selected && selected.dataset){
+      mobile.value = selected.dataset.mobile || '';
+      // If selected gst exists, could auto-fill somewhere
+    }
+  };
+}
+
+// Save customer
+$('saveCustomerBtn').addEventListener('click', ()=>{
+  const name = $('custName').value.trim();
+  if(!name){ alert('Customer name is required'); return; }
+  const mobile = $('custMobile').value.trim();
+  const gstin = $('custGst').value.trim();
+  const addr = $('custAddr').value.trim();
+  let customers = loadJSON(STORAGE_CUST, []);
+  // if exists by exact name+mobile, update
+  const idx = customers.findIndex(c => c.name === name && (c.mobile === mobile || !mobile));
+  if(idx >= 0){
+    customers[idx] = {name, mobile, gstin, address:addr};
+  } else {
+    customers.unshift({name, mobile, gstin, address:addr});
+  }
+  saveJSON(STORAGE_CUST, customers);
+  $('custName').value=''; $('custMobile').value=''; $('custGst').value=''; $('custAddr').value='';
+  populateCustomerSelect(); refreshCounts();
+  alert('Customer saved');
+});
+
+$('clearCustomerBtn').addEventListener('click', ()=>{
+  $('custName').value=''; $('custMobile').value=''; $('custGst').value=''; $('custAddr').value='';
+});
+
+// Items management
+function renderItems(){
+  const tbody = document.querySelector('#itemsTable tbody');
+  tbody.innerHTML = '';
+  let subtotal = 0;
+  items.forEach((it, idx) => {
+    const tr = document.createElement('tr');
+    const amt = Number(it.qty || 0) * Number(it.rate || 0);
+    subtotal += amt;
+    tr.innerHTML = `<td>${escapeHtml(it.name)}</td>
+      <td class="center">${it.qty}</td>
+      <td class="right">${fmt(it.rate)}</td>
+      <td class="right">${fmt(amt)}</td>
+      <td class="noprint"><button class="icon-btn" data-idx="${idx}" onclick="editItem(${idx})">Edit</button>
+      <button class="icon-btn" data-idx="${idx}" onclick="removeItem(${idx})">Delete</button></td>`;
+    tbody.appendChild(tr);
+  });
+  const cgst = round2(subtotal * (TAX_HALF/100));
+  const sgst = round2(subtotal * (TAX_HALF/100));
+  const grand = round2(subtotal + cgst + sgst);
+  $('subtotalCell').innerText = fmt(subtotal);
+  $('cgstCell').innerText = fmt(cgst);
+  $('sgstCell').innerText = fmt(sgst);
+  $('grandTotalCell').innerText = fmt(grand);
+  $('taxPctHalf').innerText = TAX_HALF;
+  $('taxPctHalf2').innerText = TAX_HALF;
+  return {subtotal, cgst, sgst, grand};
+}
+
+function round2(v){ return Math.round((v + Number.EPSILON) * 100) / 100; }
+
+window.addItemBtn = document.getElementById('addItemBtn');
+$('addItemBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('itemName').value.trim();
+  const qty = Number(document.getElementById('itemQty').value || 0);
+  const rate = Number(document.getElementById('itemRate').value || 0);
+  if(!name){ alert('Enter item description'); return; }
+  if(qty <= 0){ alert('Qty must be > 0'); return; }
+  if(rate < 0){ alert('Rate must be >= 0'); return; }
+  items.push({name, qty, rate});
+  document.getElementById('itemName').value = '';
+  document.getElementById('itemQty').value = '';
+  document.getElementById('itemRate').value = '';
+  renderItems();
+});
+
+function editItem(idx){
+  const it = items[idx];
+  if(!it) return;
+  document.getElementById('itemName').value = it.name;
+  document.getElementById('itemQty').value = it.qty;
+  document.getElementById('itemRate').value = it.rate;
+  // remove original
+  items.splice(idx,1);
+  renderItems();
+}
+
+function removeItem(idx){
+  if(!confirm('Remove item?')) return;
+  items.splice(idx,1);
+  renderItems();
+}
+
+$('clearItemsBtn').addEventListener('click', ()=>{
+  if(!confirm('Clear all items?')) return;
+  items = [];
+  renderItems();
+});
+
+// Save invoice
+$('saveInvoiceBtn').addEventListener('click', ()=>{
+  const invNoField = $('invNo');
+  let invNo = invNoField.value.trim();
+  const invDate = $('invDate').value || new Date().toISOString().slice(0,10);
+  const customer = $('custSelect').value.trim() || '';
+  const custMobile = $('custMobileSelect').value.trim() || '';
+  if(items.length === 0){ alert('Add at least one item'); return; }
+  if(!invNo) invNo = nextInvoiceNumber(true);
+  // if editing existing invoice, replace
+  const totals = renderItems();
+  let invoices = loadJSON(STORAGE_INV, []);
+  if(editingInvoiceId){
+    const idx = invoices.findIndex(i=>i.id === editingInvoiceId);
+    if(idx >= 0){
+      invoices[idx] = {
+        ...invoices[idx],
+        inv: invNo,
+        date: invDate,
+        customer,
+        customerMobile: custMobile,
+        items: items.slice(),
+        subtotal: totals.subtotal,
+        cgst: totals.cgst,
+        sgst: totals.sgst,
+        total: totals.grand,
+        updatedAt: new Date().toISOString()
+      };
+      alert('Invoice updated');
+    } else {
+      alert('Could not find invoice to update');
+    }
+    editingInvoiceId = null;
+  } else {
+    const id = 'inv_' + Date.now();
+    invoices.unshift({
+      id,
+      inv: invNo,
+      date: invDate,
+      customer,
+      customerMobile: custMobile,
+      items: items.slice(),
+      subtotal: totals.subtotal,
+      cgst: totals.cgst,
+      sgst: totals.sgst,
+      total: totals.grand,
+      createdAt: new Date().toISOString()
+    });
+    alert('Invoice saved');
+  }
+  saveJSON(STORAGE_INV, invoices);
+  // prepare next invoice number and clear
+  invNoField.value = nextInvoiceNumber(true);
+  $('invDate').value = new Date().toISOString().slice(0,10);
+  items = [];
+  renderItems();
+  clearFormFields();
+  refreshHistory();
+  refreshCounts();
+});
+
+// load invoice into form for editing
+function editInvoice(id){
+  const invoices = loadJSON(STORAGE_INV, []);
+  const inv = invoices.find(i=>i.id === id);
+  if(!inv) return alert('Invoice not found');
+  editingInvoiceId = id;
+  $('invNo').value = inv.inv;
+  $('invDate').value = inv.date;
+  if(inv.customer){
+    $('custSelect').value = inv.customer;
+    $('custMobileSelect').value = inv.customerMobile || '';
+  } else {
+    $('custSelect').value = '';
+    $('custMobileSelect').value = inv.customerMobile || '';
+  }
+  items = inv.items.map(it => ({...it})); // clone
+  renderItems();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// delete invoice
+function deleteInvoice(id){
+  if(!confirm('Delete this invoice permanently?')) return;
+  let invoices = loadJSON(STORAGE_INV, []);
+  invoices = invoices.filter(i=>i.id !== id);
+  saveJSON(STORAGE_INV, invoices);
+  refreshHistory();
+  refreshCounts();
+}
+
+// History rendering and search
+function refreshHistory(filterText=''){
+  const tbody = document.querySelector('#historyTable tbody');
+  tbody.innerHTML = '';
+  const invoices = loadJSON(STORAGE_INV, []);
+  const f = (filterText||'').toLowerCase().trim();
+  const filtered = invoices.filter(inv => {
+    if(!f) return true;
+    return (inv.inv||'').toLowerCase().includes(f) ||
+           (inv.customer||'').toLowerCase().includes(f) ||
+           (inv.date||'').toLowerCase().includes(f) ||
+           (String(inv.total||'')).toLowerCase().includes(f);
+  });
+  filtered.forEach(inv => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><strong>${inv.inv}</strong><div class="small-muted">${inv.createdAt ? new Date(inv.createdAt).toLocaleString() : ''}</div></td>
+      <td>${escapeHtml(inv.customer||'Walk-in')}</td>
+      <td>${inv.date || ''}</td>
+      <td>${fmt(inv.total)}</td>
+      <td class="noprint">
+        <button class="icon-btn" onclick="printInvoice('${inv.id}')">Print</button>
+        <button class="icon-btn" onclick="editInvoice('${inv.id}')">Edit</button>
+        <button class="icon-btn" onclick="deleteInvoice('${inv.id}')">Delete</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// Print invoice into print area then call window.print()
+function printInvoice(id){
+  const invoices = loadJSON(STORAGE_INV, []);
+  const inv = invoices.find(i=>i.id === id);
+  if(!inv) return alert('Invoice not found');
+  const area = $('printArea');
+  area.innerHTML = buildInvoiceHTML(inv);
+  // show temporarily and call print
+  setTimeout(()=> {
+    window.print();
+  },200);
+}
+
+// Build invoice HTML (print template)
+function buildInvoiceHTML(inv){
+  const company = {
+    name: 'S S TEXTILE',
+    gst: '27ABCDE1234F1Z5',
+    addr: 'Textile Market, Pune, Maharashtra',
+    mobile: '+91 98765 43210',
+    bank: 'State Bank of India',
+    ac: '1234567890123456',
+    ifsc: 'SBIN0001234',
+    upi: 'sstextile@upi'
+  };
+  const itemsHtml = inv.items.map((it, idx)=>`
+    <tr>
+      <td style="width:56%">${escapeHtml(it.name)}</td>
+      <td class="center" style="width:12%">${it.qty}</td>
+      <td class="right" style="width:16%">${fmt(it.rate)}</td>
+      <td class="right" style="width:16%">${fmt(it.qty * it.rate)}</td>
+    </tr>`).join('');
+
+  const subtotal = fmt(inv.subtotal);
+  const cgst = fmt(inv.cgst);
+  const sgst = fmt(inv.sgst);
+  const total = fmt(inv.total);
+
+  return `
+    <div style="padding:6px">
+      <div class="invoice-header">
+        <div class="invoice-header-left">
+          <div class="company-name">${company.name}</div>
+          <div class="small-muted">${company.addr}</div>
+          <div class="small-muted">Mobile: ${company.mobile}</div>
+          <div class="small-muted">GSTIN: ${company.gst}</div>
+        </div>
+        <div class="invoice-meta">
+          <div style="font-weight:700">TAX INVOICE</div>
+          <div style="margin-top:8px"><strong>Invoice:</strong> ${inv.inv}</div>
+          <div><strong>Date:</strong> ${inv.date}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;margin-top:8px">
+        <div style="width:48%">
+          <div style="font-weight:700">Bill To</div>
+          <div>${escapeHtml(inv.customer || 'Walk-in')}</div>
+          <div class="small-muted">${escapeHtml(inv.customerMobile || '')}</div>
+        </div>
+        <div style="width:48%">
+          <div style="font-weight:700">Bank / UPI</div>
+          <div class="small-muted">Bank: ${company.bank}</div>
+          <div class="small-muted">A/C: ${company.ac}</div>
+          <div class="small-muted">IFSC: ${company.ifsc}</div>
+          <div class="small-muted">UPI: ${company.upi}</div>
+        </div>
+      </div>
+
+      <table class="invoice-table" style="margin-top:12px">
+        <thead>
+          <tr><th>Item & Description</th><th class="center">Qty</th><th class="right">Rate</th><th class="right">Amount</th></tr>
+        </thead>
+        <tbody>${itemsHtml}</tbody>
+        <tfoot>
+          <tr><td colspan="3" class="right">Subtotal</td><td class="right">${subtotal}</td></tr>
+          <tr><td colspan="3" class="right">CGST (${TAX_HALF}%)</td><td class="right">${cgst}</td></tr>
+          <tr><td colspan="3" class="right">SGST (${TAX_HALF}%)</td><td class="right">${sgst}</td></tr>
+          <tr><td colspan="3" class="right"><strong>Grand Total</strong></td><td class="right"><strong>${total}</strong></td></tr>
+        </tfoot>
+      </table>
+
+      <div class="invoice-terms">
+        <div class="small-muted">Terms & Conditions: Goods once sold will not be taken back. Subject to Pune jurisdiction. This is a computer-generated invoice.</div>
+        <div style="margin-top:12px;font-weight:700">For ${company.name}</div>
+        <div style="margin-top:40px">Authorised Signatory</div>
+      </div>
+    </div>
+  `;
+}
+
+// Helpers
+function escapeHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function clearFormFields(){
+  $('custSelect').value = '';
+  $('custMobileSelect').value = '';
+}
+
+// Meta: new invoice button & auto-numbering on load
+$('newInvoiceBtn').addEventListener('click', ()=>{
+  editingInvoiceId = null;
+  items = [];
+  renderItems();
+  $('invNo').value = nextInvoiceNumber(true);
+  $('invDate').value = new Date().toISOString().slice(0,10);
+  $('custSelect').value = '';
+  $('custMobileSelect').value = '';
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+// Export / Import
+$('exportBtn').addEventListener('click', exportBackup);
+$('importFile').addEventListener('change', (e)=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      const j = JSON.parse(ev.target.result);
+      // Basic shape check and confirm
+      if(!confirm('Importing will overwrite some local data. Continue?')) return;
+      if(j.meta) saveJSON(STORAGE_META, j.meta);
+      if(j.customers) saveJSON(STORAGE_CUST, j.customers);
+      if(j.invoices) saveJSON(STORAGE_INV, j.invoices);
+      initAfterImport();
+      alert('Import complete');
+    }catch(err){
+      alert('Invalid JSON file');
+    }
+  }
+  reader.readAsText(f);
+  e.target.value = '';
+});
+
+function exportBackup(){
+  const meta = loadJSON(STORAGE_META, {});
+  const customers = loadJSON(STORAGE_CUST, []);
+  const invoices = loadJSON(STORAGE_INV, []);
+  const payload = { exportedAt: new Date().toISOString(), meta, customers, invoices };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `sst_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function initAfterImport(){
+  initStorage();
+  populateCustomerSelect();
+  refreshHistory();
+  refreshCounts();
+}
+
+// Search & filter
+$('searchInvoices').addEventListener('input', (e)=>{
+  refreshHistory(e.target.value);
+});
+
+// Month filter
+function populateMonthFilter(){
+  const sel = $('filterMonth');
+  sel.innerHTML = '<option value="">All months</option>';
+  const invoices = loadJSON(STORAGE_INV, []);
+  const months = new Set();
+  invoices.forEach(inv => {
+    if(!inv.date) return;
+    const m = inv.date.slice(0,7); // YYYY-MM
+    months.add(m);
+  });
+  Array.from(months).sort().reverse().forEach(m=>{
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m;
+    sel.appendChild(opt);
+  });
+}
+
+$('filterMonth').addEventListener('change', (e)=>{
+  const v = e.target.value;
+  if(!v) return refreshHistory($('searchInvoices').value);
+  // filter to month
+  const invoices = loadJSON(STORAGE_INV, []);
+  const filtered = invoices.filter(inv => (inv.date || '').startsWith(v));
+  const tbody = document.querySelector('#historyTable tbody');
+  tbody.innerHTML = '';
+  filtered.forEach(inv => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><strong>${inv.inv}</strong></td><td>${escapeHtml(inv.customer||'Walk-in')}</td><td>${inv.date}</td><td>${fmt(inv.total)}</td>
+      <td class="noprint"><button class="icon-btn" onclick="printInvoice('${inv.id}')">Print</button>
+      <button class="icon-btn" onclick="editInvoice('${inv.id}')">Edit</button>
+      <button class="icon-btn" onclick="deleteInvoice('${inv.id}')">Delete</button></td>`;
+    tbody.appendChild(tr);
+  });
+});
+
+// Print preview: populate print area from current form data (without saving)
+$('printPreviewBtn').addEventListener('click', ()=>{
+  if(items.length === 0){ if(!confirm('No items added. Continue to print empty invoice?')) return; }
+  const tempInv = {
+    id: 'preview_'+Date.now(),
+    inv: $('invNo').value || nextInvoiceNumber(false),
+    date: $('invDate').value || new Date().toISOString().slice(0,10),
+    customer: $('custSelect').value || '',
+    customerMobile: $('custMobileSelect').value || '',
+    items: items.slice(),
+    subtotal: renderItems().subtotal,
+    cgst: renderItems().cgst,
+    sgst: renderItems().sgst,
+    total: renderItems().grand
+  };
+  $('printArea').innerHTML = buildInvoiceHTML(tempInv);
+  setTimeout(()=> window.print(), 250);
+});
+
+// Help dialog
+$('helpBtn').addEventListener('click', ()=> {
+  alert('S S Textile Billing — Offline\n\nHow to use:\n- Add customers via sidebar.\n- Add items and Save Invoice.\n- Use Backup to export data and Import to restore.\n- Click Print to generate an A4 GST invoice.\n\nData is stored locally in your browser. Export your data before clearing browser storage or switching devices.');
+});
+
+// Initialization on load
+function startup(){
+  initStorage();
+  populateCustomerSelect();
+  // Set default invoice number and date on first visit
+  if(!$('invNo').value) $('invNo').value = nextInvoiceNumber(true);
+  if(!$('invDate').value) $('invDate').value = new Date().toISOString().slice(0,10);
+  renderItems();
+  refreshHistory();
+  refreshCounts();
+}
+startup();
+
+// Render history and counts
+function refreshHistoryAndUI(){
+  refreshHistory($('searchInvoices').value);
+  refreshCounts();
+}
+refreshHistoryAndUI();
+
+// Utility: expose some functions globally for inline onclick handlers
+window.editInvoice = editInvoice;
+window.printInvoice = printInvoice;
+window.deleteInvoice = deleteInvoice;
+window.editItem = editItem;
+window.removeItem = removeItem;
+
+// Escape on page unload: optional warning if unsaved items present
+window.addEventListener('beforeunload', function(e){
+  if(items.length > 0){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+</script>
+</body>
+</html>
